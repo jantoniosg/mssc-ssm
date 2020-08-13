@@ -19,7 +19,7 @@ import java.util.EnumSet;
 import java.util.Random;
 
 /**
- * Created by jantonio on 13/08/2020.
+ * Created by jt on 2019-07-23.
  */
 @Slf4j
 @EnableStateMachineFactory
@@ -43,12 +43,20 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
                 .and()
                 .withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and()
-                .withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED);
+                .withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED)
+                //preauth to auth
+                .and()
+                .withExternal().source(PaymentState.PRE_AUTH).target(PaymentState.PRE_AUTH).event(PaymentEvent.AUTHORIZE)
+                .action(authAction())
+                .and()
+                .withExternal().source(PaymentState.PRE_AUTH).target(PaymentState.AUTH).event(PaymentEvent.AUTH_APPROVED)
+                .and()
+                .withExternal().source(PaymentState.PRE_AUTH).target(PaymentState.AUTH_ERROR).event(PaymentEvent.AUTH_DECLINED);
     }
 
     @Override
     public void configure(StateMachineConfigurationConfigurer<PaymentState, PaymentEvent> config) throws Exception {
-        StateMachineListenerAdapter<PaymentState, PaymentEvent> adapter = new StateMachineListenerAdapter<>() {
+        StateMachineListenerAdapter<PaymentState, PaymentEvent> adapter = new StateMachineListenerAdapter<>(){
             @Override
             public void stateChanged(State<PaymentState, PaymentEvent> from, State<PaymentState, PaymentEvent> to) {
                 log.info(String.format("stateChanged(from: %s, to: %s)", from, to));
@@ -59,18 +67,38 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
                 .listener(adapter);
     }
 
-    public Action<PaymentState, PaymentEvent> preAuthAction() {
+    public Action<PaymentState, PaymentEvent> preAuthAction(){
         return context -> {
-            System.out.println("PreAuth wall called!");
+            System.out.println("PreAuth was called!!!");
 
             if (new Random().nextInt(10) < 8) {
-                System.out.println("Approved");
+                System.out.println("Pre Auth Approved");
                 context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_APPROVED)
                         .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
                         .build());
+
             } else {
-                System.out.println("Declined! No Credit!!!!!!");
+                System.out.println("Pre Auth Declined! No Credit!!!!!!");
                 context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_DECLINED)
+                        .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
+                        .build());
+            }
+        };
+    }
+
+    public Action<PaymentState, PaymentEvent> authAction(){
+        return context -> {
+            System.out.println("Auth was called!!!");
+
+            if (new Random().nextInt(10) < 8) {
+                System.out.println("Auth Approved");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.AUTH_APPROVED)
+                        .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
+                        .build());
+
+            } else {
+                System.out.println("Auth Declined! No Credit!!!!!!");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.AUTH_DECLINED)
                         .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
                         .build());
             }

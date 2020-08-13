@@ -14,12 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Created by jantonio on 13/08/2020.
+ * Created by jt on 2019-08-10.
  */
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
-
     public static final String PAYMENT_ID_HEADER = "payment_id";
 
     private final PaymentRepository paymentRepository;
@@ -34,7 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public StateMachine<PaymentState, PaymentEvent> preauth(Long paymentId) {
+    public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
 
         sendEvent(paymentId, sm, PaymentEvent.PRE_AUTHORIZE);
@@ -47,11 +46,12 @@ public class PaymentServiceImpl implements PaymentService {
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
 
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
+        sendEvent(paymentId, sm, PaymentEvent.AUTHORIZE);
 
         return sm;
     }
 
+    @Deprecated // not needed
     @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
@@ -62,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
         return sm;
     }
 
-    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event) {
+    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event){
         Message msg = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_ID_HEADER, paymentId)
                 .build();
@@ -70,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
         sm.sendEvent(msg);
     }
 
-    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId) {
+    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId){
         Payment payment = paymentRepository.getOne(paymentId);
 
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(payment.getId()));
