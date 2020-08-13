@@ -2,11 +2,14 @@ package guru.springframework.msscssm.services;
 
 import com.sun.xml.bind.v2.util.QNameMap;
 import guru.springframework.msscssm.domain.Payment;
+import guru.springframework.msscssm.domain.PaymentEvent;
+import guru.springframework.msscssm.domain.PaymentState;
 import guru.springframework.msscssm.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.statemachine.StateMachine;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -38,9 +41,15 @@ class PaymentServiceImplTest {
     void preAuth(){
         Payment savedPayment = paymentService.newPayment(payment);
 
-        paymentService.preauth(savedPayment.getId());
+        System.out.println("Should be NEW");
+        System.out.println(savedPayment.getState());
+
+        StateMachine<PaymentState, PaymentEvent> sm = paymentService.preauth(savedPayment.getId());
 
         Payment preAuthedPayment = paymentRepository.getOne(savedPayment.getId());
+
+        System.out.println("should be PRE_AUTH");
+        System.out.println(sm.getState().getId());
 
         System.out.println(preAuthedPayment);
 

@@ -1,11 +1,13 @@
 package guru.springframework.msscssm.domain;
 
-import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 /**
@@ -19,7 +21,7 @@ import java.math.BigDecimal;
 public class Payment {
 
     @Id
-    @Generated
+    @GeneratedValue
     private Long id;
 
     @Enumerated(EnumType.STRING)
