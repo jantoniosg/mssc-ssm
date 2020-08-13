@@ -11,6 +11,7 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Created by jantonio on 13/08/2020.
@@ -31,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.save(payment);
     }
 
+    @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> preauth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(paymentId));
@@ -40,15 +42,17 @@ public class PaymentServiceImpl implements PaymentService {
         return null;
     }
 
+    @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(paymentId));
 
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_DECLINED);
+        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
 
         return null;
     }
 
+    @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(paymentId));
@@ -82,6 +86,5 @@ public class PaymentServiceImpl implements PaymentService {
         sm.start();
 
         return sm;
-
     }
 }
