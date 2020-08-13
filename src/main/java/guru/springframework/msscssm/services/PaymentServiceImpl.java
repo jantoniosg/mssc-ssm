@@ -23,6 +23,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final StateMachineFactory<PaymentState, PaymentEvent> stateMachineFactory;
+    private final PaymentStateChangeInterceptor paymentStateChangeInterceptor;
 
     @Override
     public Payment newPayment(Payment payment) {
@@ -57,7 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
         return null;
     }
 
-    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event){
+    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event) {
         Message msg = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_ID_HEADER, paymentId)
                 .build();
@@ -65,7 +66,7 @@ public class PaymentServiceImpl implements PaymentService {
         sm.sendEvent(msg);
     }
 
-    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId){
+    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId) {
         Payment payment = paymentRepository.getOne(paymentId);
 
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(payment.getId()));
@@ -74,6 +75,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         sm.getStateMachineAccessor()
                 .doWithAllRegions(sma -> {
+                    sma.addStateMachineInterceptor(paymentStateChangeInterceptor);
                     sma.resetStateMachine(new DefaultStateMachineContext<>(payment.getState(), null, null, null));
                 });
 
